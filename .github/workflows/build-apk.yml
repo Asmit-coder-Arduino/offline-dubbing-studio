@@ -74,7 +74,6 @@ jobs:
 
       - name: Create placeholder app icon (if missing)
         run: |
-          cd offline-dubbing-studio
           if [ ! -f assets/icons/app_icon.png ]; then
             python3 - <<'EOF'
           from PIL import Image, ImageDraw
@@ -89,14 +88,9 @@ jobs:
 
       - name: Create placeholder model files (build-time only)
         run: |
-          cd offline-dubbing-studio
           mkdir -p assets/models/piper assets/whisper assets/piper
-          # Tiny placeholder so buildozer includes the directory in the APK
           echo "placeholder" > assets/models/ggml-tiny.en.bin.placeholder
           echo "placeholder" > assets/models/piper/.gitkeep
-          # NOTE: Real model files (ggml-tiny.en.bin, .onnx) must be added
-          # to the repo or downloaded via workflow secret URL before building.
-          # See the README for model download instructions.
 
       - name: Accept Android SDK licenses
         run: |
@@ -104,7 +98,6 @@ jobs:
           yes | buildozer android debug 2>&1 | head -5 || true
 
       - name: Build debug APK
-        working-directory: offline-dubbing-studio
         run: |
           buildozer -v android debug 2>&1 | tee build.log
         env:
@@ -115,7 +108,7 @@ jobs:
         if: always()
         with:
           name: offline-dubbing-studio-debug-apk
-          path: offline-dubbing-studio/bin/*.apk
+          path: bin/*.apk
           if-no-files-found: warn
           retention-days: 30
 
@@ -124,5 +117,5 @@ jobs:
         if: failure()
         with:
           name: build-log
-          path: offline-dubbing-studio/build.log
+          path: build.log
           retention-days: 7
