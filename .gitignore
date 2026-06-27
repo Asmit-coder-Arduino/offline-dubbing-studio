@@ -1,49 +1,40 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# Buildozer
+.buildozer/
+bin/
+build.log
+build-release.log
 
-# compiled output
-dist
-tmp
-out-tsc
-*.tsbuildinfo
-.expo
-.expo-shared
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+dist/
 
-# dependencies
-node_modules
+# Kivy cache
+.kivy/
 
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
+# Database
+*.db
+*.sqlite
 
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+# Temp files
+*.tmp
+.tmp_*/
 
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
+# Large model files (download separately, don't commit to git)
+assets/models/*.bin
+assets/models/piper/*.onnx
+assets/whisper/main
+assets/piper/piper
 
-# System Files
+# Keystore (NEVER commit)
+*.keystore
+*.jks
+release.keystore
+
+# OS
 .DS_Store
 Thumbs.db
-
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
-# Replit
-.cache/
-.local/
