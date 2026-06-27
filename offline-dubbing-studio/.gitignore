@@ -1,0 +1,40 @@
+# Buildozer
+.buildozer/
+bin/
+build.log
+build-release.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+dist/
+
+# Kivy cache
+.kivy/
+
+# Database
+*.db
+*.sqlite
+
+# Temp files
+*.tmp
+.tmp_*/
+
+# Large model files (download separately, don't commit to git)
+assets/models/*.bin
+assets/models/piper/*.onnx
+assets/whisper/main
+assets/piper/piper
+
+# Keystore (NEVER commit)
+*.keystore
+*.jks
+release.keystore
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,129 @@
+name: Build Release APK
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. v1.0.0)"
+        required: true
+        default: "v1.0.0"
+
+jobs:
+  build-release:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            git zip unzip curl wget \
+            build-essential cmake ninja-build \
+            autoconf automake libtool pkg-config \
+            libffi-dev libssl-dev libsqlite3-dev \
+            zlib1g-dev libltdl-dev ffmpeg lld ccache
+
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: buildozer-release-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: buildozer-release-${{ runner.os }}-
+
+      - name: Cache Android SDK and NDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer/android/platform/android-sdk
+            ~/.buildozer/android/platform/android-ndk-r25b
+          key: android-sdk-ndk-${{ runner.os }}-v1
+
+      - name: Install Python build tools
+        run: |
+          pip install --upgrade pip wheel
+          pip install "cython==0.29.37" "buildozer==1.5.0"
+          pip install kivy==2.3.0 kivymd==1.2.0 pillow
+
+      - name: Create placeholder icon if missing
+        run: |
+          cd offline-dubbing-studio
+          python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGBA', (512, 512), (18, 18, 26, 255))
+          d = ImageDraw.Draw(img)
+          d.ellipse([40,40,472,472], fill=(25,45,120,255))
+          img.save('assets/icons/app_icon.png')
+          " 2>/dev/null || touch assets/icons/app_icon.png
+
+      - name: Build release APK
+        working-directory: offline-dubbing-studio
+        run: buildozer -v android release 2>&1 | tee build-release.log
+
+      - name: Sign APK with keystore
+        working-directory: offline-dubbing-studio
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
+            UNSIGNED=$(ls bin/*-release-unsigned.apk 2>/dev/null | head -1)
+            if [ -n "$UNSIGNED" ]; then
+              jarsigner -verbose \
+                -sigalg SHA256withRSA -digestalg SHA-256 \
+                -keystore release.keystore \
+                -storepass "$KEYSTORE_PASSWORD" \
+                -keypass "$KEY_PASSWORD" \
+                "$UNSIGNED" "$KEY_ALIAS"
+              zipalign -v 4 "$UNSIGNED" bin/offline-dubbing-studio-release.apk
+              echo "Signed APK created: bin/offline-dubbing-studio-release.apk"
+            fi
+            rm -f release.keystore
+          else
+            echo "No keystore secret found — uploading unsigned APK"
+          fi
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-dubbing-studio-release-apk
+          path: |
+            offline-dubbing-studio/bin/*-release.apk
+            offline-dubbing-studio/bin/*-release-unsigned.apk
+          retention-days: 90
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: offline-dubbing-studio/bin/*.apk
+          body: |
+            ## Offline Video Dubbing Studio ${{ github.ref_name }}
+
+            ### Install
+            Download the APK and install on your Android device (API 21+).
+
+            > **Note:** You must grant Storage and Microphone permissions on first launch.
+            > AI models are bundled. No internet connection required.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
