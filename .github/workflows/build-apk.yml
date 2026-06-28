@@ -38,9 +38,13 @@ jobs:
             libsqlite3-dev \
             zlib1g-dev \
             libltdl-dev \
-            ffmpeg \
             lld \
             ccache
+
+      - name: Accept Android SDK licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+          yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses 2>/dev/null || true
 
       - name: Cache pip packages
         uses: actions/cache@v4
@@ -49,31 +53,28 @@ jobs:
           key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
           restore-keys: pip-${{ runner.os }}-
 
-      - name: Cache Buildozer global directory
+      - name: Cache Buildozer directory
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-          restore-keys: buildozer-${{ runner.os }}-
-
-      - name: Cache Android SDK and NDK
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.buildozer/android/platform/android-sdk
-            ~/.buildozer/android/platform/android-ndk-r25b
-          key: android-sdk-ndk-${{ runner.os }}-v4
-          restore-keys: android-sdk-ndk-${{ runner.os }}-
+          key: buildozer-${{ runner.os }}-v5-${{ hashFiles('buildozer.spec') }}
+          restore-keys: buildozer-${{ runner.os }}-v5-
 
       - name: Install Python build tools
         run: |
           pip install --upgrade pip wheel setuptools
           pip install "cython==0.29.37"
           pip install "buildozer==1.5.0"
-          pip install "python-for-android==2024.1.21"
           pip install kivy==2.3.0 kivymd==1.2.0 pillow
 
-      - name: Create placeholder app icon (if missing)
+      - name: Show Android environment
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
+          ls $ANDROID_HOME/ndk/ 2>/dev/null || echo "No ndk dir"
+          ls $ANDROID_HOME/ 2>/dev/null
+
+      - name: Create placeholder app icon
         run: |
           mkdir -p assets/icons
           if [ ! -f assets/icons/app_icon.png ]; then
@@ -88,35 +89,29 @@ jobs:
           EOF
           fi
 
-      - name: Create placeholder model files (build-time only)
+      - name: Create placeholder model dirs
         run: |
           mkdir -p assets/models/piper assets/whisper assets/piper
           echo "placeholder" > assets/models/ggml-tiny.en.bin.placeholder
           echo "placeholder" > assets/models/piper/.gitkeep
 
-      - name: Accept Android SDK licenses
-        run: |
-          mkdir -p "$HOME/.android"
-          echo "count=0" > "$HOME/.android/repositories.cfg"
-          if [ -d "$HOME/.buildozer/android/platform/android-sdk/cmdline-tools" ]; then
-            yes | find "$HOME/.buildozer/android/platform/android-sdk" -name "sdkmanager" -exec {} --licenses \; 2>/dev/null || true
-          fi
-
       - name: Build debug APK
         run: |
-          set -o pipefail
           buildozer -v android debug 2>&1 | tee build.log
-          echo "Exit code: $?"
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
 
       - name: Find APK files
         if: always()
         run: |
-          echo "=== Searching for APK files ==="
+          echo "=== Searching for APK ==="
           find . -name "*.apk" 2>/dev/null || echo "No APK found"
-          echo "=== bin/ directory ==="
-          ls -la bin/ 2>/dev/null || echo "No bin/ directory"
-          echo "=== build.log tail ==="
-          tail -50 build.log 2>/dev/null || echo "No build.log"
+          echo "=== bin/ contents ==="
+          ls -la bin/ 2>/dev/null || echo "No bin/ dir"
+          echo "=== Last 30 lines of build.log ==="
+          tail -30 build.log 2>/dev/null || echo "No build.log"
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

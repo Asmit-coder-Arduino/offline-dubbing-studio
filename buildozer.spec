@@ -10,8 +10,6 @@ version = 1.0.0
 
 requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,pyjnius,android,openssl,sqlite3,plyer
 
-p4a.branch = 2024.01.21
-
 orientation = portrait
 
 fullscreen = 0
@@ -19,8 +17,12 @@ android.archs = arm64-v8a
 
 android.api = 33
 android.minapi = 21
-android.ndk = 25b
+android.ndk = 27c
 android.sdk = 33
+
+android.sdk_path = /usr/local/lib/android/sdk
+android.ndk_path = /usr/local/lib/android/sdk/ndk/27.3.13750724
+android.ant_path = /usr/share/ant
 
 android.accept_sdk_license = True
 
