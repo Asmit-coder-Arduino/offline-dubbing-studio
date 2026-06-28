@@ -62,15 +62,16 @@ jobs:
           path: |
             ~/.buildozer/android/platform/android-sdk
             ~/.buildozer/android/platform/android-ndk-r25b
-          key: android-sdk-ndk-${{ runner.os }}-v3
+          key: android-sdk-ndk-${{ runner.os }}-v4
           restore-keys: android-sdk-ndk-${{ runner.os }}-
 
       - name: Install Python build tools
         run: |
-          pip install --upgrade pip wheel
+          pip install --upgrade pip wheel setuptools
           pip install "cython==0.29.37"
           pip install "buildozer==1.5.0"
-          pip install kivy==2.2.1 kivymd==1.1.1 pillow
+          pip install "python-for-android==2024.1.21"
+          pip install kivy==2.3.0 kivymd==1.2.0 pillow
 
       - name: Create placeholder app icon (if missing)
         run: |

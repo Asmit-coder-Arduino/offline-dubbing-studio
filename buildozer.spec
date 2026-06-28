@@ -8,7 +8,9 @@ source.include_exts = py,png,jpg,kv,atlas,ttf,db,json,txt,xml
 
 version = 1.0.0
 
-requirements = python3,kivy==2.2.1,kivymd==1.1.1,pillow,pyjnius,android,openssl,sqlite3,plyer
+requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,pyjnius,android,openssl,sqlite3,plyer
+
+p4a.branch = 2024.01.21
 
 orientation = portrait
 
